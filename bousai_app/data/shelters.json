@@ -1,14 +1,170 @@
 [
   {
     "id": 1,
-    "name": "御所見小学校"
+    "name": "御所見小学校",
+    "address": "青森市大字御所見1-1",
+    "status": "開設中",
+    "capacity": 180,
+    "current_occupants": 90,
+    "pet_allowed": false,
+    "barrier_free": true,
+    "wheelchair_toilet": true,
+    "welfare_space": true
   },
   {
     "id": 2,
-    "name": "片瀬小学校"
+    "name": "片瀬小学校",
+    "address": "青森市片瀬2-3-4",
+    "status": "開設中",
+    "capacity": 220,
+    "current_occupants": 210,
+    "pet_allowed": true,
+    "barrier_free": true,
+    "wheelchair_toilet": false,
+    "welfare_space": false
   },
   {
     "id": 5,
-    "name": "鵠洋小学校"
+    "name": "鵠洋小学校",
+    "address": "青森市鵠ケ森4-5-6",
+    "status": "準備中",
+    "capacity": 150,
+    "current_occupants": 20,
+    "pet_allowed": true,
+    "barrier_free": false,
+    "wheelchair_toilet": false,
+    "welfare_space": true
+  },
+  {
+    "id": 6,
+    "name": "収容数テスト避難所_0ff74fcb",
+    "address": "青森市テスト町1-2-3",
+    "status": "開設中",
+    "capacity": 120,
+    "current_occupants": 80,
+    "pet_allowed": null,
+    "barrier_free": null,
+    "wheelchair_toilet": null,
+    "welfare_space": null
+  },
+  {
+    "id": 7,
+    "name": "テスト避難所_6f2cb799",
+    "address": "",
+    "status": "開設中",
+    "capacity": 0,
+    "current_occupants": 0,
+    "pet_allowed": null,
+    "barrier_free": null,
+    "wheelchair_toilet": null,
+    "welfare_space": null
+  },
+  {
+    "id": 8,
+    "name": "収容数テスト避難所_f537c41d",
+    "address": "青森市テスト町1-2-3",
+    "status": "開設中",
+    "capacity": 120,
+    "current_occupants": 80,
+    "pet_allowed": null,
+    "barrier_free": null,
+    "wheelchair_toilet": null,
+    "welfare_space": null
+  },
+  {
+    "id": 9,
+    "name": "テスト避難所_949e26c1",
+    "address": "",
+    "status": "開設中",
+    "capacity": 0,
+    "current_occupants": 0,
+    "pet_allowed": false,
+    "barrier_free": false,
+    "wheelchair_toilet": false,
+    "welfare_space": false
+  },
+  {
+    "id": 10,
+    "name": "収容数テスト避難所_0bc923c0",
+    "address": "青森市テスト町1-2-3",
+    "status": "開設中",
+    "capacity": 120,
+    "current_occupants": 80,
+    "pet_allowed": false,
+    "barrier_free": false,
+    "wheelchair_toilet": false,
+    "welfare_space": false
+  },
+  {
+    "id": 11,
+    "name": "テスト避難所_c82d6677",
+    "address": "",
+    "status": "開設中",
+    "capacity": 0,
+    "current_occupants": 0,
+    "pet_allowed": false,
+    "barrier_free": false,
+    "wheelchair_toilet": false,
+    "welfare_space": false
+  },
+  {
+    "id": 12,
+    "name": "収容数テスト避難所_39752b3b",
+    "address": "青森市テスト町1-2-3",
+    "status": "開設中",
+    "capacity": 120,
+    "current_occupants": 80,
+    "pet_allowed": false,
+    "barrier_free": false,
+    "wheelchair_toilet": false,
+    "welfare_space": false
+  },
+  {
+    "id": 13,
+    "name": "テスト避難所_cf076a76",
+    "address": "",
+    "status": "開設中",
+    "capacity": 0,
+    "current_occupants": 0,
+    "pet_allowed": false,
+    "barrier_free": false,
+    "wheelchair_toilet": false,
+    "welfare_space": false
+  },
+  {
+    "id": 14,
+    "name": "収容数テスト避難所_76550c07",
+    "address": "青森市テスト町1-2-3",
+    "status": "開設中",
+    "capacity": 120,
+    "current_occupants": 80,
+    "pet_allowed": false,
+    "barrier_free": false,
+    "wheelchair_toilet": false,
+    "welfare_space": false
+  },
+  {
+    "id": 15,
+    "name": "テスト避難所_dcfc015e",
+    "address": "",
+    "status": "開設中",
+    "capacity": 0,
+    "current_occupants": 0,
+    "pet_allowed": false,
+    "barrier_free": false,
+    "wheelchair_toilet": false,
+    "welfare_space": false
+  },
+  {
+    "id": 16,
+    "name": "収容数テスト避難所_6e51fbb9",
+    "address": "青森市テスト町1-2-3",
+    "status": "開設中",
+    "capacity": 120,
+    "current_occupants": 80,
+    "pet_allowed": false,
+    "barrier_free": false,
+    "wheelchair_toilet": false,
+    "welfare_space": false
   }
 ]

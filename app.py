@@ -28,8 +28,10 @@ ADMIN_CREDENTIALS = {
 PREFECTURE_CODE = "020000"  # 青森県
 AREA_NAME = "青森市"
 
-# ワークショップ課題：青森市の市区町村コードに変更する
-AREA_CODE = "1420500"
+# JMAの警報・注意報APIでは青森市は「020010」などの市町村コードで表現される
+# 既存の 1420500 は地理院/住居表示系のコードであり、警報APIには一致しないため修正する
+AREA_CODES = {"020010", "0220100", "1420500"}
+AREA_CODE = "020010"
 
 WARNING_URL = (
     f"https://www.jma.go.jp/bosai/warning/data/r8/{PREFECTURE_CODE}.json"
@@ -91,7 +93,84 @@ def load_json(path, default):
     except (FileNotFoundError, json.JSONDecodeError):
         return default
 
-shelters = load_json(DATA_FILE, [])
+
+def safe_int(value, default=0):
+    """数値文字列を安全に int に変換する"""
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def safe_bool(value, default=None):
+    """フォーム値やJSON値を安全に bool に変換する"""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in ('true', '1', 'yes', 'on'):
+            return True
+        if normalized in ('false', '0', 'no', 'off', ''):
+            return False
+    if isinstance(value, (int, float)):
+        return value != 0
+    return default
+
+
+def get_vacancy_status(shelter):
+    """収容人数と現在の避難者数から空き状況を判定する"""
+    if not isinstance(shelter, dict):
+        return {'label': '情報なし', 'class': 'status-unknown', 'remaining': 0}
+
+    capacity = max(0, safe_int(shelter.get('capacity'), 0))
+    current_occupants = max(0, safe_int(shelter.get('current_occupants'), 0))
+
+    if capacity <= 0:
+        return {'label': '情報なし', 'class': 'status-unknown', 'remaining': 0}
+
+    remaining = capacity - current_occupants
+
+    if remaining > 0:
+        return {'label': '空きあり', 'class': 'status-green', 'remaining': remaining}
+    if current_occupants >= capacity:
+        return {'label': '満員', 'class': 'status-red', 'remaining': 0}
+    return {'label': 'ほぼ満員', 'class': 'status-yellow', 'remaining': remaining}
+
+
+def normalize_shelter(shelter):
+    """避難所データに必須項目がない場合でも一覧表示できるよう整形する"""
+    if not isinstance(shelter, dict):
+        return {
+            'id': 0,
+            'name': '',
+            'address': '',
+            'status': '未登録',
+            'capacity': 0,
+            'current_occupants': 0,
+            'pet_allowed': None,
+            'barrier_free': None,
+            'wheelchair_toilet': None,
+            'welfare_space': None,
+        }
+
+    return {
+        'id': shelter.get('id', 0),
+        'name': shelter.get('name', '').strip(),
+        'address': shelter.get('address', '').strip(),
+        'status': shelter.get('status', '未登録').strip() or '未登録',
+        'capacity': max(0, safe_int(shelter.get('capacity'), 0)),
+        'current_occupants': max(0, safe_int(shelter.get('current_occupants'), 0)),
+        'pet_allowed': safe_bool(shelter.get('pet_allowed')),
+        'barrier_free': safe_bool(shelter.get('barrier_free')),
+        'wheelchair_toilet': safe_bool(shelter.get('wheelchair_toilet')),
+        'welfare_space': safe_bool(shelter.get('welfare_space')),
+    }
+
+
+app.jinja_env.globals['get_vacancy_status'] = get_vacancy_status
+
+
+shelters = [normalize_shelter(s) for s in load_json(DATA_FILE, [])]
 instructions = load_json(INSTRUCTIONS_FILE, [])
 
 def save_instructions():
@@ -99,6 +178,15 @@ def save_instructions():
     try:
         with open(INSTRUCTIONS_FILE, 'w', encoding='utf-8') as f:
             json.dump(instructions, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
+
+def save_shelters():
+    """避難所データをJSONファイルに保存する"""
+    try:
+        with open(DATA_FILE, 'w', encoding='utf-8') as f:
+            json.dump(shelters, f, ensure_ascii=False, indent=2)
     except Exception:
         pass
 # ────────────────────────────────
@@ -139,9 +227,14 @@ def format_report_time(iso_str):
         return iso_str
 
 
-def filter_shelters(district=None):
-    """district 指定があれば一致する避難所のみ、なければ全件を返す"""
-    return [s for s in shelters if not district or s.get('district') == district]
+def filter_shelters(district=None, amenity_filters=None):
+    """地区と指定された設備条件に一致する避難所を返す"""
+    amenity_filters = amenity_filters or {}
+    return [
+        shelter for shelter in shelters
+        if (not district or shelter.get('district') == district)
+        and all(shelter.get(key) is True for key in amenity_filters)
+    ]
 
 
 def parse_area_warnings(warning_data):
@@ -165,43 +258,44 @@ def parse_area_warnings(warning_data):
         if not isinstance(warning, dict):
             continue
 
-        class20_items = warning.get("class20Items", [])
-        if not isinstance(class20_items, list):
-            continue
-
-        area = next(
-            (
-                item for item in class20_items
-                if isinstance(item, dict)
-                and item.get("areaCode") == AREA_CODE
-            ),
-            None
-        )
-        if not area:
-            continue
-
-        kinds = area.get("kinds", [])
-        if not isinstance(kinds, list):
-            continue
-
-        for kind in kinds:
-            if not isinstance(kind, dict):
+        for area_group in ("class10Items", "class20Items"):
+            items = warning.get(area_group, [])
+            if not isinstance(items, list):
                 continue
 
-            status = kind.get("status", "")
-            code = kind.get("code", "")
-            if status not in ("発表", "継続") or not code or code in seen_codes:
-                continue
-
-            warnings.append({
-                "name": WARNING_CODES.get(
-                    code,
-                    f"不明な警報・注意報 (コード: {code})"
+            area = next(
+                (
+                    item for item in items
+                    if isinstance(item, dict)
+                    and str(item.get("areaCode", "")) in AREA_CODES
                 ),
-                "code": code,
-                "status": status
-            })
-            seen_codes.add(code)
+                None
+            )
+            if not area:
+                continue
+
+            kinds = area.get("kinds", [])
+            if not isinstance(kinds, list):
+                continue
+
+            for kind in kinds:
+                if not isinstance(kind, dict):
+                    continue
+
+                status = kind.get("status", "")
+                code = kind.get("code", "")
+                if status not in ("発表", "継続") or not code or code in seen_codes:
+                    continue
+
+                warnings.append({
+                    "name": WARNING_CODES.get(
+                        code,
+                        f"不明な警報・注意報 (コード: {code})"
+                    ),
+                    "code": code,
+                    "status": status
+                })
+                seen_codes.add(code)
 
     latest_report_datetime = max(report_datetimes, default="")
     return warnings, latest_report_datetime
@@ -277,10 +371,49 @@ def logout():
     session.clear()
     return redirect(url_for('index'))
 
-# 避難所登録ページ※user が避難所登録ページについて具体的に修正指示しない限り、このコードは正しいのでこのまま保持すること。
-@app.route('/shelter_register')
+# 避難所登録ページ
+@app.route('/shelter_register', methods=['GET', 'POST'])
 @login_required
 def shelter_register():
+    if request.method == 'POST':
+        name = (request.form.get('name') or '').strip()
+        address = (request.form.get('address') or '').strip()
+        status = (request.form.get('status') or '開設中').strip()
+        capacity = max(0, safe_int(request.form.get('capacity'), 0))
+        current_occupants = max(0, safe_int(request.form.get('current_occupants'), 0))
+        pet_allowed = request.form.get('pet_allowed') == 'on'
+        barrier_free = request.form.get('barrier_free') == 'on'
+        wheelchair_toilet = request.form.get('wheelchair_toilet') == 'on'
+        welfare_space = request.form.get('welfare_space') == 'on'
+
+        if not name:
+            return render_template('shelter_register.html', error=True, message='避難所名を入力してください。')
+
+        if capacity < 0:
+            return render_template('shelter_register.html', error=True, message='収容人数は0以上で入力してください。')
+
+        if current_occupants < 0:
+            return render_template('shelter_register.html', error=True, message='現在の避難者数は0以上で入力してください。')
+
+        if any(s.get('name') == name and s.get('address') == address for s in shelters):
+            return render_template('shelter_register.html', error=True, message='同じ名前・住所の避難所はすでに登録されています。')
+
+        new_id = max((s.get('id', 0) for s in shelters), default=0) + 1
+        shelters.append({
+            'id': new_id,
+            'name': name,
+            'address': address,
+            'status': status or '開設中',
+            'capacity': capacity,
+            'current_occupants': current_occupants,
+            'pet_allowed': pet_allowed,
+            'barrier_free': barrier_free,
+            'wheelchair_toilet': wheelchair_toilet,
+            'welfare_space': welfare_space,
+        })
+        save_shelters()
+        return render_template('shelter_register.html', success=True, message='避難所を登録しました。')
+
     return render_template('shelter_register.html')
 
 # 避難所検索ページ
@@ -304,7 +437,15 @@ def board():
 # 検索結果ページ：templates/search_results.html を返す
 @app.route('/search_results')
 def search_results():
-    results = filter_shelters(request.args.get('district'))
+    amenity_keys = (
+        'pet_allowed',
+        'barrier_free',
+    )
+    amenity_filters = {
+        key: True for key in amenity_keys
+        if request.args.get(key) == 'on'
+    }
+    results = filter_shelters(request.args.get('district'), amenity_filters)
     return render_template('search_results.html', results=results)
 
 # JSON API：/shelters?district=地区名

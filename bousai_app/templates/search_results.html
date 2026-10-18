@@ -4,17 +4,62 @@
 <h2>検索結果</h2>
 
 {% if results %}
-  <ul>
-    {% for shelter in results %}
-    <li>{{ shelter.name }}</li>
-    {% endfor %}
-  </ul>
+  <table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%; background: white;">
+    <thead>
+      <tr>
+        <th style="text-align: left;">避難所名</th>
+        <th style="text-align: left;">住所</th>
+        <th style="text-align: left;">開設状況</th>
+        <th style="text-align: left;">収容人数</th>
+        <th style="text-align: left;">現在の避難者数</th>
+        <th style="text-align: left;">空き状況</th>
+        <th style="text-align: left;">設備・対応</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for shelter in results %}
+      {% set vacancy = get_vacancy_status(shelter) %}
+      <tr>
+        <td>{{ shelter.name or '未登録' }}</td>
+        <td>{{ shelter.address or '未登録' }}</td>
+        <td>{{ shelter.status or '未登録' }}</td>
+        <td>{{ shelter.capacity or 0 }}人</td>
+        <td>{{ shelter.current_occupants or 0 }}人</td>
+        <td>
+          <span class="status-pill {{ vacancy.class }}">{{ vacancy.label }}</span>
+          {% if shelter.capacity %}
+            <div class="status-detail">{{ shelter.capacity - shelter.current_occupants }}人空き</div>
+          {% else %}
+            <div class="status-detail">収容情報なし</div>
+          {% endif %}
+        </td>
+        <td>
+          <div class="amenity-list">
+            {% for key, icon, label in [
+              ('pet_allowed', '🐾', 'ペット同伴'),
+              ('barrier_free', '♿', 'バリアフリー'),
+              ('wheelchair_toilet', '🚻', '車いす対応トイレ'),
+              ('welfare_space', '♡', '福祉スペース')
+            ] %}
+              {% set supported = shelter[key] %}
+              <span class="amenity-item {% if supported is sameas true %}amenity-yes{% elif supported is sameas false %}amenity-no{% else %}amenity-unknown{% endif %}"
+                    aria-label="{{ label }}: {% if supported is sameas true %}対応あり{% elif supported is sameas false %}対応なし{% else %}情報なし{% endif %}">
+                <span class="amenity-icon" aria-hidden="true">{{ icon }}</span>
+                <span>{{ label }}</span>
+                <strong>{% if supported is sameas true %}✓ 対応あり{% elif supported is sameas false %}× 対応なし{% else %}？ 情報なし{% endif %}</strong>
+              </span>
+            {% endfor %}
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 {% else %}
-  <p>該当する避難所が見つかりませんでした</p>
+  <section class="empty-results" role="status" aria-live="polite">
+    <div class="empty-results-icon" aria-hidden="true">⌕</div>
+    <h3>条件に合う避難所がありません</h3>
+    <p>選択した設備・対応条件を見直して、再検索してください。</p>
+  </section>
 {% endif %}
-
-<p>
-  <a href="/shelter_search">検索画面に戻る</a> |
-  <a href="/">トップページへ戻る</a>
-</p>
 {% endblock %}

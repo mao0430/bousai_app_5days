@@ -2,7 +2,16 @@
 
 {% block content %}
 <h2>避難所検索</h2>
-<p>登録されている避難所を確認できます。</p>
+<p>希望する設備・対応を選んで避難所を検索できます。</p>
+
+<form action="/search_results" method="get" class="shelter-search-form">
+	<fieldset>
+		<legend>必要な設備・対応（複数選択可）</legend>
+		<label><input type="checkbox" name="pet_allowed"> 🐾 ペット同伴可</label>
+		<label><input type="checkbox" name="barrier_free"> ♿ バリアフリー</label>
+	</fieldset>
+	<button type="submit">この条件で検索</button>
+</form>
 
 <p><a href="/all_shelters">全施設一覧</a></p>
 {% endblock %}

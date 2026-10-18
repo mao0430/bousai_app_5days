@@ -16,8 +16,35 @@
 <form method="POST">
   <p>
     <label for="name">避難所名（必須）</label><br>
-    <input type="text" id="name" name="name">
+    <input type="text" id="name" name="name" placeholder="例：○○小学校">
   </p>
+  <p>
+    <label for="address">住所（必須）</label><br>
+    <input type="text" id="address" name="address" placeholder="例：青森市○○町1-2-3">
+  </p>
+  <p>
+    <label for="status">開設状況</label><br>
+    <select id="status" name="status">
+      <option value="開設中">開設中</option>
+      <option value="準備中">準備中</option>
+      <option value="一時閉鎖">一時閉鎖</option>
+    </select>
+  </p>
+  <p>
+    <label for="capacity">収容人数（人）</label><br>
+    <input type="number" id="capacity" name="capacity" min="0" value="0" placeholder="例：200">
+  </p>
+  <p>
+    <label for="current_occupants">現在の避難者数（人）</label><br>
+    <input type="number" id="current_occupants" name="current_occupants" min="0" value="0" placeholder="例：150">
+  </p>
+  <fieldset>
+    <legend>設備・配慮事項</legend>
+    <p><label><input type="checkbox" name="pet_allowed"> ペット同伴可</label></p>
+    <p><label><input type="checkbox" name="barrier_free"> バリアフリー</label></p>
+    <p><label><input type="checkbox" name="wheelchair_toilet"> 車いす対応トイレ</label></p>
+    <p><label><input type="checkbox" name="welfare_space"> 福祉スペース</label></p>
+  </fieldset>
   <p><button type="submit">登録</button></p>
 </form>
 {% endblock %}
